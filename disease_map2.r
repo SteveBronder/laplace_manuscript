@@ -8,7 +8,7 @@ set.seed(1954)
 modelName <- "disease_map_ela"
 # modelName <- "skim_logit_ela"
 
-setwd("~/Desktop/Code/laplace_approximation/Script/")
+#setwd("~/Desktop/Code/laplace_approximation/Script/")
 .libPaths("~/Rlib")
 
 # Setting for habenero cluster
@@ -21,12 +21,13 @@ dataDir <- file.path(scriptDir, "data")
 outDir <- file.path(scriptDir, "deliv", modelName)
 delivDir <- file.path("deliv", modelName)
 
-dataFile <- "disease_data_full.r"
+dataFile <- "disease_data_250.r"
 # dataFile <- "disease_data_100.r"
 
 library(rstan)
 library(cmdstanr)
-set_cmdstan_path("~/Desktop/Code/laplace_approximation/cmdStan/")
+
+set_cmdstan_path("~/stan/stevebronder/laplace_testing/cmdstan")
 # set_cmdstan_path("/rigel/home/ccm2172/laplace_approximation/cmdStan")
 library(parallel)
 # library(rootSolve)
@@ -36,7 +37,7 @@ source(file.path("tools", "stanTools.r"))
 
 data <- read_rdump(file.path(dataDir, dataFile))
 
-reduced <- TRUE
+reduced <- FALSE
 n_sample <- 250  # 911
 if (reduced) {
   # select_index <- sample(1:911, n_sample)
@@ -67,7 +68,7 @@ with(data, stan_rdump(ls(data), "data/disease_data.r"))
 ###########################################################################
 if (TRUE) {
   file <- file.path(modelDir, modelName, paste0(modelName, ".stan"))
-  mod <- cmdstan_model(file)
+  mod <- cmdstan_model(file, force_recompile=TRUE)
 }
 
 nChains <- 4
@@ -87,7 +88,7 @@ saveRDS(stanfit, file = file.path(outDir, paste(modelName, n_sample,
 parms <- c("alpha", "rho", "theta[1]", "theta[2]", "lp__")
 
 dir.create(delivDir)
-pdf(file = file.path(delivDir, paste(modelName,"Plots%03d.pdf", 
+pdf(file = file.path(delivDir, paste(modelName,"Plots%03d.pdf",
                                      sep = "")),
     width = 6, height = 6, onefile = F)
 
@@ -104,8 +105,7 @@ eff_bulk <- ptable[, 21] / time
 eff_tail <- ptable[, 22] / time
 ptable <- cbind(ptable, eff, eff_bulk, eff_tail)
 
-write.csv(ptable, file = file.path(delivDir, paste(modelName, 
+write.csv(ptable, file = file.path(delivDir, paste(modelName,
                                                    "ParameterTable.csv", sep = "")))
 
 ptable[, c(1:3, 21, 22, 24, 25)]
-

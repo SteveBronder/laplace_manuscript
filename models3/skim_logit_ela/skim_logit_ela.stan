@@ -2,7 +2,7 @@
 // to be compatible with ovarian and prostate data set.
 
 functions {
-  matrix K_functor (vector parm, matrix x_tot, 
+  matrix K_functor (vector parm, matrix x_tot,
                     real[] delta, int[] delta_int) {
     int n = delta_int[1];
     int d = delta_int[2];
@@ -59,7 +59,7 @@ transformed data {
 
   vector[n] mu = rep_vector(0, n);
   matrix[n, d] x2 = square(x);
-  
+
   // variables for the Laplace approximation
   real delta[1] = {scale_icept};
   int delta_int[2] = {n, d};
@@ -80,7 +80,7 @@ parameters {
 }
 
 transformed parameters {
-  real<lower = 0> eta_one = (d0 / (d - d0)) 
+  real<lower = 0> eta_one = (d0 / (d - d0))
     * (sigma / sqrt(n)) * tau;
   real<lower = 0> m_squared = slab_scale2 * caux;
   vector[d] kappa_squared = m_squared * square(lambda)
@@ -98,8 +98,8 @@ model {
   tau ~ student_t(nu_global, 0, 1);
   caux ~ inv_gamma(half_slab_df, half_slab_df);
   xi ~ inv_gamma(half_slab_df, half_slab_df);
-  
-  target += laplace_marginal_bernoulli(y, n_samples, K_functor, parm,
+
+  target += laplace_marginal_bernoulli_lpmf(y | n_samples, K_functor, parm,
                                        x_tot, delta, delta_int, theta0);
 }
 

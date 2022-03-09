@@ -1,12 +1,10 @@
 
 functions {
-  matrix K_functor (vector parm, matrix X,
-                    real[] scale_icept, int[] delta_int) {
-    int d = delta_int[1];
+  matrix K_functor (matrix X, int d, real scale_icept,
+     real tau, vector lambda_tilde) {
     vector[d + 1] k_diag;
-    k_diag[1] = square(scale_icept[1]);
-    k_diag[2:(d + 1)] = parm[1] * parm[2:(d + 1)];
-
+    k_diag[1] = square(scale_icept);
+    k_diag[2:(d + 1)] = tau * lambda_tilde;
     return X * diag_pre_multiply(k_diag, X');
   }
 }
@@ -42,13 +40,10 @@ parameters {
 }
 
 transformed parameters {
-  vector[d + 1] parm;
+  vector[d] lambda_tilde;   // 'truncated' local shrinkage parameter
   {
-    vector[d] lambda_tilde;   // 'truncated' local shrinkage parameter
     real c = slab_scale * sqrt(caux); // slab scale
     lambda_tilde = sqrt( c^2 * square(lambda) ./ (c^2 + tau^2*square(lambda)));
-    parm[1] = tau;
-    parm[2:(d + 1)] = lambda_tilde;
   }
 }
 
@@ -58,13 +53,14 @@ model {
   tau ~ student_t(nu_global, 0, scale_global*2);
   caux ~ inv_gamma(0.5*slab_df, 0.5*slab_df);
 
-  target += laplace_marginal_bernoulli(y, n_samples, K_functor, parm,
-                                       X, delta, delta_int, theta0);
+  target += laplace_marginal_bernoulli_logit_lpmf(y | n_samples, theta0, K_functor,
+                                        X, d, scale_icept, tau, lambda_tilde);
+
 }
 generated quantities {
   vector[n] log_lik;
-  vector[n] f = laplace_approx_bernoulli_rng(y, n_samples, K_functor, parm,
-                                             X, delta, delta_int, theta0);
+  vector[n] f = laplace_marginal_bernoulli_logit_rng(y, n_samples, theta0, K_functor,
+                                        forward_as_tuple(X, d, scale_icept), forward_as_tuple(X, d, scale_icept), tau, lambda_tilde);
 
   for (i in 1:n) log_lik[i] = bernoulli_logit_lpmf(y[i] | f[i]);
 }

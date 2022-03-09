@@ -1,0 +1,8 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+/deliv/**/**/*
+/deliv/**/*
+/models3/**/*
+!/models3/**/*.stan
